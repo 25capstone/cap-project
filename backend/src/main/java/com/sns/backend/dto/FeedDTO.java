@@ -7,41 +7,34 @@ import java.time.LocalDateTime;
 
 public class FeedDTO {
 
-    @Data
-    public static class FeedRequestDTO {
-        private String content;
-        private String imageUrl;
-        private Integer userId;
-
-        public Feed toEntity() {
-            Feed feed = new Feed();
-            feed.setContent(this.content);
-            feed.setImageUrl(this.imageUrl);
-            feed.setUserId(this.userId);
-            feed.setCreatedAt(LocalDateTime.now());
-            feed.setUpdatedAt(LocalDateTime.now());
-            return feed;
-        }
+    public static class Request {
+        public Long userId;
+        public Long routeId;
+        public String title;
+        public String content;
     }
 
-    @Data
-    public static class FeedResponseDTO {
-        private Integer feedId;
-        private String content;
-        private String imageUrl;
-        private Integer userId;
-        private LocalDateTime createdAt;
-        private LocalDateTime updatedAt;
+    public static class Response {
+        public Long feedId;
+        public Long userId;
+        public Long routeId;
+        public String title;
+        public String content;
+        public LocalDateTime createdAt;
+        public LocalDateTime updatedAt;
 
-        public static FeedResponseDTO fromEntity(Feed feed) {
-            FeedResponseDTO dto = new FeedResponseDTO();
-            dto.setFeedId(feed.getFeedId());
-            dto.setContent(feed.getContent());
-            dto.setImageUrl(feed.getImageUrl());
-            dto.setUserId(feed.getUserId());
-            dto.setCreatedAt(feed.getCreatedAt());
-            dto.setUpdatedAt(feed.getUpdatedAt());
+        public static Response fromEntity(Feed feed) {
+            Response dto = new Response();
+            dto.feedId = feed.getFeedId();
+            dto.userId = feed.getUser().getUserId();
+            dto.routeId = feed.getRoute() != null ? feed.getRoute().getRouteId() : null;  // null 체크 추가
+            dto.title = feed.getTitle();
+            dto.content = feed.getContent();
+            dto.createdAt = feed.getCreatedAt();
+            dto.updatedAt = feed.getUpdatedAt();
             return dto;
         }
+
     }
 }
+

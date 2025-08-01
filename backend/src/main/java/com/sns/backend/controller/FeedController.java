@@ -1,11 +1,12 @@
 package com.sns.backend.controller;
 
-import com.sns.backend.dto.FeedDTO.FeedRequestDTO;
-import com.sns.backend.dto.FeedDTO.FeedResponseDTO;
+import com.sns.backend.dto.FeedDTO;
 import com.sns.backend.entity.Feed;
 import com.sns.backend.service.FeedService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.sns.backend.security.CustomUserDetails;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,55 +20,53 @@ public class FeedController {
     public FeedController(FeedService feedService) {
         this.feedService = feedService;
     }
+    public Long currentUserId = 123L; // 테스트용!! 아이디 지정한거임
 
-    // CREATE
     @PostMapping
-    public ResponseEntity<FeedResponseDTO> createFeed(@RequestBody FeedRequestDTO requestDTO) {
-        Feed savedFeed = feedService.createFeed(requestDTO.toEntity());
-        return ResponseEntity.ok(FeedResponseDTO.fromEntity(savedFeed));
+    public ResponseEntity<FeedDTO.Response> create(@RequestBody FeedDTO.Request dto,
+                                                   @AuthenticationPrincipal CustomUserDetails principal) {
+
+        //Long currentUserId = principal.getUserId();
+        Feed created = feedService.create(dto, currentUserId);
+        return ResponseEntity.ok(FeedDTO.Response.fromEntity(created));
     }
 
-    // READ - All
-    @GetMapping
-    public ResponseEntity<List<FeedResponseDTO>> getAllFeeds() {
-        List<FeedResponseDTO> feeds = feedService.getAllFeeds()
-                .stream()
-                .map(FeedResponseDTO::fromEntity)
+    @GetMapping("/visible")
+    public ResponseEntity<List<FeedDTO.Response>> getVisibleFeeds(
+            @AuthenticationPrincipal CustomUserDetails principal) {
+        //Long currentUserId = principal.getUserId();
+        List<Long> followedUserIds = feedService.getFollowedUserIds(currentUserId);
+        List<Feed> feeds = feedService.getVisibleFeeds(currentUserId, followedUserIds);
+
+        List<FeedDTO.Response> result = feeds.stream()
+                .map(FeedDTO.Response::fromEntity)
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(feeds);
+        return ResponseEntity.ok(result);
     }
 
-    // READ - Single
+
     @GetMapping("/{feedId}")
-    public ResponseEntity<FeedResponseDTO> getFeed(@PathVariable Integer feedId) {
-        return feedService.getFeedById(feedId)
-                .map(FeedResponseDTO::fromEntity)
+    public ResponseEntity<FeedDTO.Response> get(@PathVariable Long feedId) {
+        return feedService.get(feedId)
+                .map(FeedDTO.Response::fromEntity)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // UPDATE
     @PutMapping("/{feedId}")
-    public ResponseEntity<FeedResponseDTO> updateFeed(@PathVariable Integer feedId, @RequestBody FeedRequestDTO requestDTO) {
-        Feed updatedFeed = requestDTO.toEntity();  // 새 값
-        Feed result = feedService.updateFeed(feedId, updatedFeed);  // 기존 ID로 업데이트
-        return ResponseEntity.ok(FeedResponseDTO.fromEntity(result));
+    public ResponseEntity<FeedDTO.Response> update(@PathVariable Long feedId,
+                                                   @RequestBody FeedDTO.Request dto,
+                                                   @AuthenticationPrincipal CustomUserDetails principal) {
+        //Long currentUserId = principal.getUserId();
+        Feed updated = feedService.update(feedId, dto, currentUserId);
+        return ResponseEntity.ok(FeedDTO.Response.fromEntity(updated));
     }
 
-    // DELETE
     @DeleteMapping("/{feedId}")
-    public ResponseEntity<Void> deleteFeed(@PathVariable Integer feedId) {
-        feedService.deleteFeed(feedId);
+    public ResponseEntity<Void> delete(@PathVariable Long feedId,
+                                       @AuthenticationPrincipal CustomUserDetails principal) {
+        //Long currentUserId = principal.getUserId();
+        feedService.delete(feedId, currentUserId);
         return ResponseEntity.noContent().build();
-    }
-
-    // (Optional) 사용자별 피드 목록
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<FeedResponseDTO>> getFeedsByUser(@PathVariable Integer userId) {
-        List<FeedResponseDTO> feeds = feedService.getFeedsByUserId(userId)
-                .stream()
-                .map(FeedResponseDTO::fromEntity)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(feeds);
     }
 }
