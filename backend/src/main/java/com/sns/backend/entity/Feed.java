@@ -13,24 +13,32 @@ public class Feed {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "feed_id") // DB 컬럼과 정확히 매핑
-    private Integer feedId;
+    private Long feedId;
 
-    @Column(name = "user_id", nullable = false)
-    private Integer userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "route_id")
+    private DailyRoute route;
+
+    @Column(nullable = false, length = 100)
+    private String title;
 
     @Column(columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "image_url", columnDefinition = "TEXT")
-    private String imageUrl;
-
-    @Column(name = "created_at")
     private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // --- Getters and Setters ---
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = this.updatedAt = LocalDateTime.now();
+    }
 
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }
