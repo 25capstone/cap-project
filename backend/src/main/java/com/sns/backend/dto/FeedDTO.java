@@ -1,7 +1,6 @@
 package com.sns.backend.dto;
 
 import com.sns.backend.entity.Feed;
-import lombok.Data;
 
 import java.time.LocalDateTime;
 

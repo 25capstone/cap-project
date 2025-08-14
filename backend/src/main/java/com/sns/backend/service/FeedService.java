@@ -54,8 +54,9 @@ public class FeedService {
     }
 
     public List<Feed> getVisibleFeeds(Long currentUserId, List<Long> followedUserIds) {
-        return feedRepository.findVisibleFeeds(currentUserId, followedUserIds);
+        return feedRepository.findVisibleFeeds(currentUserId);
     }
+
 
     public Optional<Feed> get(Long feedId) {
         return feedRepository.findById(feedId);

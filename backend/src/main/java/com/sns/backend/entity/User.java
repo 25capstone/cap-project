@@ -18,6 +18,10 @@ public class User {
     @Column(name = "login_id", nullable = false, unique = true, length = 100)
     private String loginId;
 
+    @Column(name = "email", nullable = false, unique = true, length = 255)
+    private String email;
+
+
     @Column(name = "password", length = 100)
     private String password;
 

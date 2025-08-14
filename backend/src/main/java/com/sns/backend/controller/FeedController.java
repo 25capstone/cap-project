@@ -20,13 +20,13 @@ public class FeedController {
     public FeedController(FeedService feedService) {
         this.feedService = feedService;
     }
-    public Long currentUserId = 123L; // 테스트용!! 아이디 지정한거임
+    //public Long currentUserId = 1651615L; // 테스트용!! 아이디 지정한거임
 
     @PostMapping
     public ResponseEntity<FeedDTO.Response> create(@RequestBody FeedDTO.Request dto,
                                                    @AuthenticationPrincipal CustomUserDetails principal) {
 
-        //Long currentUserId = principal.getUserId();
+        Long currentUserId = principal.getUserId();
         Feed created = feedService.create(dto, currentUserId);
         return ResponseEntity.ok(FeedDTO.Response.fromEntity(created));
     }
@@ -34,7 +34,7 @@ public class FeedController {
     @GetMapping("/visible")
     public ResponseEntity<List<FeedDTO.Response>> getVisibleFeeds(
             @AuthenticationPrincipal CustomUserDetails principal) {
-        //Long currentUserId = principal.getUserId();
+        Long currentUserId = principal.getUserId();
         List<Long> followedUserIds = feedService.getFollowedUserIds(currentUserId);
         List<Feed> feeds = feedService.getVisibleFeeds(currentUserId, followedUserIds);
 
@@ -57,7 +57,7 @@ public class FeedController {
     public ResponseEntity<FeedDTO.Response> update(@PathVariable Long feedId,
                                                    @RequestBody FeedDTO.Request dto,
                                                    @AuthenticationPrincipal CustomUserDetails principal) {
-        //Long currentUserId = principal.getUserId();
+        Long currentUserId = principal.getUserId();
         Feed updated = feedService.update(feedId, dto, currentUserId);
         return ResponseEntity.ok(FeedDTO.Response.fromEntity(updated));
     }
@@ -65,7 +65,7 @@ public class FeedController {
     @DeleteMapping("/{feedId}")
     public ResponseEntity<Void> delete(@PathVariable Long feedId,
                                        @AuthenticationPrincipal CustomUserDetails principal) {
-        //Long currentUserId = principal.getUserId();
+        Long currentUserId = principal.getUserId();
         feedService.delete(feedId, currentUserId);
         return ResponseEntity.noContent().build();
     }
