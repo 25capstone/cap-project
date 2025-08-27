@@ -13,7 +13,7 @@ import java.util.Date;
 @Component
 public class JwtProvider {
 
-    @Value("${jwt.secret}") // application.properties에 설정한 비밀키
+    @Value("${jwt.secret}")               // 최소 32바이트 이상 (권장: Base64 256bit)
     private String secretKey;
 
     @Value("${jwt.expiration-in-ms}")
@@ -23,46 +23,55 @@ public class JwtProvider {
 
     @PostConstruct
     public void init() {
-        // UTF-8 인코딩 명시 & 안전하게 Key 객체로 변환
+        // ⚠️ secretKey가 너무 짧으면 HS256에서 WeakKeyException 발생
+        // 권장: 32바이트 이상 or Base64로 256bit 제공
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 
-    // JWT 토큰 생성
+    // JWT 생성
     public String createToken(String loginId, Long userId) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationInMs);
 
         return Jwts.builder()
-                .setSubject(loginId)            // 토큰 제목 (주로 사용자 식별값)
-                .claim("userId", userId)        // 커스텀 클레임 추가 가능
-                .setIssuedAt(now)               // 토큰 발행 시간
-                .setExpiration(expiryDate)     // 만료 시간
-                .signWith(key, SignatureAlgorithm.HS256) // 서명 알고리즘 및 키 설정
+                .setSubject(loginId)            // sub = loginId (유지)
+                .claim("userId", userId)        // uid 클레임
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // JWT 토큰에서 로그인ID 추출
+    // loginId(subject) 추출 (현재 필터에서 이미 사용 중)
     public String getLoginIdFromToken(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-
-        return claims.getSubject();
+        return getAllClaims(token).getSubject();
     }
 
-    // 토큰 유효성 검사
+    // ✅ userId 추출 — 필터에서 이걸로 로딩하면 더 안정적
+    public Long getUserIdFromToken(String token) {
+        Claims claims = getAllClaims(token);
+        Object val = claims.get("userId");
+        if (val instanceof Integer i) return i.longValue();
+        if (val instanceof Long l) return l;
+        if (val instanceof String s) return Long.valueOf(s);
+        throw new IllegalArgumentException("Invalid userId claim type: " + (val == null ? "null" : val.getClass()));
+    }
+
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(token);
+            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
             return true;
+        } catch (ExpiredJwtException e) {
+            // 만료: 필요하면 로그/모니터링
+            return false;
         } catch (JwtException | IllegalArgumentException e) {
-            // 토큰이 유효하지 않음 (만료, 위조 등)
             return false;
         }
+    }
+
+    private Claims getAllClaims(String token) {
+        return Jwts.parserBuilder().setSigningKey(key).build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 }
